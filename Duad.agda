@@ -5,12 +5,20 @@ module Duad where
 -- Various imports from Agda's standard library
 
 open import Data.Integer using (ℤ; NonZero; _*_; +_; _+_; _-_; -_)
-open import Data.Integer.Properties using (i*j≢0; *-assoc; *-comm; +-comm; *-distribʳ-+; *-distribˡ-+; +-assoc; neg-distribʳ-*)
+open import Data.Integer.Properties
+  using
+    ( i*j≢0
+    ; *-assoc ; *-comm ; +-comm
+    ; *-distribʳ-+; *-distribˡ-+
+    ; +-assoc
+    ; neg-distribˡ-*; neg-distribʳ-*
+    ; neg-distrib-+
+    ; neg-involutive
+    )
 open import Data.Product using (proj₁; proj₂; _,_)
 open import Level using (0ℓ)
 open import Relation.Binary using (Rel; IsEquivalence; Setoid)
 open import Relation.Binary.PropositionalEquality as ≡ using (_≡_; module ≡-Reasoning)
-
 
 module Definition where
 
@@ -60,14 +68,15 @@ module Operations where
   infixl 7 _×_ _÷_
   infixl 6 _⊕_ _⊝_
 
-  -- height
+  -- Height
   h : Duad → ℤ
   h (a , b) = b
 
-  -- length
+  -- Length
   l : Duad → ℤ
   l (a , b) = a
 
+  -- Scaling
   scale-by : ℤ → Duad → Duad
   scale-by r (a , b) = r * a , r * b
 
@@ -129,7 +138,6 @@ module BasicLaws where
           (b * (a * c)) * f + b * ((d * a) * e)   ≡⟨ ≡.cong₂ (λ x y → x * f + b * y) (*-comm b (a * c)) (*-assoc d a e) ⟩
           ((a * c) * b) * f + b * (d * (a * e))   ≡⟨ ≡.cong₂ _+_ (*-assoc (a * c) b f) (≡.sym (*-assoc b d (a * e))) ⟩
           (a * c) * (b * f) + (b * d) * (a * e)   ∎
-
       ≡₂ : b * (b * (d * f)) ≡ (b * d) * (b * f)
       ≡₂ = begin
           b * (b * (d * f)) ≡⟨ ≡.cong (b *_) (*-assoc b d f) ⟨
@@ -148,11 +156,13 @@ module BasicLaws where
 
   -- Secondary laws
 
+  -- Interaction of ⊕ and ⊝
+
   ⊕-⊝ : (p q r : Duad) → (p ⊕ q) ⊝ r ≡ p ⊕ (q ⊝ r)
-  ⊕-⊝ (a , b) (c , d) (e , f) = mk-≡ ≡top (*-assoc b d f)
+  ⊕-⊝ (a , b) (c , d) (e , f) = mk-≡ ≡₁ (*-assoc b d f)
     where
-      ≡top : (a * d + b * c) * f - (b * d) * e ≡ a * (d * f) + b * (c * f - d * e)
-      ≡top = begin
+      ≡₁ : (a * d + b * c) * f - (b * d) * e ≡ a * (d * f) + b * (c * f - d * e)
+      ≡₁ = begin
           (a * d + b * c) * f - (b * d) * e           ≡⟨ ≡.cong (_- (b * d) * e) (*-distribʳ-+ f (a * d) (b * c)) ⟩
           ((a * d) * f + (b * c) * f) - (b * d) * e   ≡⟨ +-assoc (a * d * f) (b * c * f) (- (b * d * e)) ⟩
           (a * d) * f + ((b * c) * f - (b * d) * e)   ≡⟨ ≡.cong₂ (λ x y → a * d * f + (x - y)) (*-assoc b c f) (*-assoc b d e) ⟩
@@ -160,6 +170,38 @@ module BasicLaws where
           (a * d) * f + (b * (c * f) + b * - (d * e)) ≡⟨ ≡.cong (λ x → a * d * f + x) (*-distribˡ-+ b (c * f) (- (d * e))) ⟨
           (a * d) * f + b * (c * f - d * e)           ≡⟨ ≡.cong (_+ b * (c * f - d * e)) (*-assoc a d f) ⟩
           a * (d * f) + b * (c * f - d * e)           ∎
+
+  ⊝-⊝ : (p q r : Duad) → (p ⊝ q) ⊝ r ≡ p ⊝ (q ⊕ r)
+  ⊝-⊝ (a , b) (c , d) (e , f) = mk-≡ ≡₁ (*-assoc b d f)
+    where
+      ≡₁ : (a * d - b * c) * f - (b * d) * e ≡ a * (d * f) - b * (c * f + d * e)
+      ≡₁ = begin
+          (a * d - b * c) * f - (b * d) * e             ≡⟨ ≡.cong (_- (b * d) * e) (*-distribʳ-+ f (a * d) (- (b * c))) ⟩
+          ((a * d) * f + (- (b * c)) * f) - (b * d) * e ≡⟨ +-assoc (a * d * f) (- (b * c) * f) (- (b * d * e)) ⟩
+          (a * d) * f + (- (b * c) * f - (b * d) * e)   ≡⟨ ≡.cong (λ x → a * d * f + (x - ((b * d) * e))) (neg-distribˡ-* (b * c) f) ⟨
+          (a * d) * f + (- ((b * c) * f) - (b * d) * e) ≡⟨ ≡.cong (λ x → (a * d) * f + x) (neg-distrib-+ ((b * c) * f) ((b * d) * e)) ⟨
+          (a * d) * f - ((b * c * f) + (b * d) * e)     ≡⟨ ≡.cong₂ (λ x y → a * d * f - (x + y)) (*-assoc b c f) (*-assoc b d e) ⟩
+          (a * d) * f - (b * (c * f) + b * (d * e))     ≡⟨ ≡.cong (λ x → a * d * f - x) (*-distribˡ-+ b (c * f) (d * e)) ⟨
+          (a * d) * f - b * (c * f + d * e)             ≡⟨ ≡.cong (_- b * (c * f + d * e)) (*-assoc a d f) ⟩
+          a * (d * f) - b * (c * f + d * e)             ∎
+
+  ⊝-⊕ : (p q r : Duad) → (p ⊝ q) ⊕ r ≡ p ⊝ (q ⊝ r)
+  ⊝-⊕ (a , b) (c , d) (e , f) = mk-≡ ≡₁ (*-assoc b d f)
+    where
+      ≡₁ : (a * d - b * c) * f + (b * d) * e ≡ a * (d * f) - b * (c * f - d * e)
+      ≡₁ = begin
+          (a * d - b * c) * f + (b * d) * e             ≡⟨ ≡.cong (_+ (b * d) * e) (*-distribʳ-+ f (a * d) (- (b * c))) ⟩
+          ((a * d) * f + (- (b * c)) * f) + (b * d) * e ≡⟨ +-assoc (a * d * f) (- (b * c) * f) (b * d * e) ⟩
+          (a * d) * f + (- (b * c) * f + b * d * e)     ≡⟨ ≡.cong (λ x → a * d * f + (x + ((b * d) * e))) (neg-distribˡ-* (b * c) f) ⟨
+          (a * d) * f + (- (b * c * f) + b * d * e)     ≡⟨ ≡.cong (λ x → (a * d) * f + (- (b * c * f) + x)) (neg-involutive (b * d * e)) ⟨
+          (a * d) * f + (- (b * c * f) - - (b * d * e)) ≡⟨ ≡.cong (λ x → (a * d) * f + x) (neg-distrib-+ ((b * c) * f) (- ((b * d) * e))) ⟨
+          (a * d) * f - (b * c * f - (b * d * e))       ≡⟨ ≡.cong₂ (λ x y → (a * d) * f - (x - y)) (*-assoc b c f) (*-assoc b d e) ⟩
+          (a * d) * f - (b * (c * f) - b * (d * e))     ≡⟨ ≡.cong (λ x → a * d * f - (b * (c * f) + x)) (neg-distribʳ-* b (d * e)) ⟩
+          (a * d) * f - (b * (c * f) + b * (- (d * e))) ≡⟨ ≡.cong (λ x → a * d * f - x) (*-distribˡ-+ b (c * f) (- (d * e))) ⟨
+          (a * d) * f - b * (c * f - d * e)             ≡⟨ ≡.cong (_- b * (c * f - d * e)) (*-assoc a d f) ⟩
+          a * (d * f) - b * (c * f - d * e)             ∎
+
+  -- Interaction of × and ÷
 
   ×-÷ : (p q r : Duad) → (p × q) ÷ r ≡ p × (q ÷ r)
   ×-÷ (a , b) (c , d) (e , f) = mk-≡ (*-assoc a c f) (*-assoc b d e)
@@ -169,6 +211,87 @@ module BasicLaws where
 
   ÷-× : (p q r : Duad) → (p ÷ q) × r ≡ p ÷ (q ÷ r)
   ÷-× (a , b) (c , d) (e , f) = mk-≡ (*-assoc a d e) (*-assoc b c f)
+
+  -- Secondary distributive laws
+
+  -- Multiplication distributes over subtraction from the left, when scaled by height
+  ×-distribˡ-⊝ : ∀ p q r → scale-by (h p) (p × (q ⊝ r)) ≡ (p × q) ⊝ (p × r)
+  ×-distribˡ-⊝ (a , b) (c , d) (e , f) = mk-≡ ≡₁ ≡₂
+    where
+      ≡₁ : b * (a * (c * f - d * e)) ≡ (a * c) * (b * f) - (b * d) * (a * e)
+      ≡₁ = begin
+          b * (a * (c * f - d * e))               ≡⟨ ≡.cong (b *_) (*-distribˡ-+ a (c * f) (- (d * e))) ⟩
+          b * (a * (c * f) + a * - (d * e))       ≡⟨ ≡.cong (λ x → b * (a * (c * f) + x)) (neg-distribʳ-* a (d * e)) ⟨
+          b * (a * (c * f) - a * (d * e))         ≡⟨ ≡.cong₂ (λ x y → b * (x - y)) (*-assoc a c f) (*-assoc a d e) ⟨
+          b * ((a * c) * f - (a * d) * e)         ≡⟨ *-distribˡ-+ b ((a * c) * f) (- ((a * d) * e)) ⟩
+          b * ((a * c) * f) + b * - ((a * d) * e) ≡⟨ ≡.cong (λ x → b * ((a * c) * f) + x) (neg-distribʳ-* b (a * d * e)) ⟨
+          b * ((a * c) * f) - b * ((a * d) * e)   ≡⟨ ≡.cong₂ (λ x y → x - b * (y * e)) (*-assoc b (a * c) f) (*-comm d a) ⟨
+          (b * (a * c)) * f - b * ((d * a) * e)   ≡⟨ ≡.cong₂ (λ x y → x * f - b * y) (*-comm b (a * c)) (*-assoc d a e) ⟩
+          ((a * c) * b) * f - b * (d * (a * e))   ≡⟨ ≡.cong₂ _-_ (*-assoc (a * c) b f) (≡.sym (*-assoc b d (a * e))) ⟩
+          (a * c) * (b * f) - (b * d) * (a * e)   ∎
+      ≡₂ : b * (b * (d * f)) ≡ (b * d) * (b * f)
+      ≡₂ = begin
+          b * (b * (d * f)) ≡⟨ ≡.cong (b *_) (*-assoc b d f) ⟨
+          b * ((b * d) * f) ≡⟨ ≡.cong (λ x → b * (x * f)) (*-comm b d) ⟩
+          b * ((d * b) * f) ≡⟨ ≡.cong (b *_) (*-assoc d b f) ⟩
+          b * (d * (b * f)) ≡⟨ *-assoc b d (b * f) ⟨
+          (b * d) * (b * f) ∎
+
+  -- Multiplication distributes over subtraction from the right, when scaled by height
+  ×-distribʳ-⊝ : ∀ p q r → scale-by (h r) ((p ⊝ q) × r) ≡ (p × r) ⊝ (q × r)
+  ×-distribʳ-⊝ p q r = begin
+      scale-by (h r) ((p ⊝ q) × r)  ≡⟨ ≡.cong (scale-by (h r)) (×-comm (p ⊝ q) r) ⟩
+      scale-by (h r) (r × (p ⊝ q))  ≡⟨ ×-distribˡ-⊝ r p q ⟩
+      (r × p) ⊝ (r × q)             ≡⟨ ≡.cong₂ _⊝_ (×-comm r p) (×-comm r q) ⟩
+      (p × r) ⊝ (q × r)             ∎
+
+  -- Division distributives over addition from the right, when scaled by length
+  ÷-distribʳ-⊕ : ∀ p q r → scale-by (l r) ((p ⊕ q) ÷ r) ≡ (p ÷ r) ⊕ (q ÷ r)
+  ÷-distribʳ-⊕ (a , b) (c , d) (e , f) = mk-≡ ≡₁ ≡₂
+    where
+      ≡₁ : e * ((a * d + b * c) * f) ≡ a * f * (d * e) + b * e * (c * f)
+      ≡₁ = begin
+          e * ((a * d + b * c) * f)             ≡⟨ ≡.cong (e *_) (*-distribʳ-+ f (a * d) (b * c)) ⟩
+          e * ((a * d) * f + (b * c) * f)       ≡⟨ *-distribˡ-+ e (a * d * f) (b * c * f) ⟩
+          e * (a * d * f) + e * (b * c * f)     ≡⟨ ≡.cong₂ (λ x y → e * x + e * y) (*-assoc a d f) (*-assoc b c f) ⟩
+          e * (a * (d * f)) + e * (b * (c * f)) ≡⟨ ≡.cong (λ x → e * (a * x) + e * (b * (c * f))) (*-comm f d) ⟨
+          e * (a * (f * d)) + e * (b * (c * f)) ≡⟨ ≡.cong (λ x → e * x + e * (b * (c * f))) (*-assoc a f d) ⟨
+          e * ((a * f) * d) + e * (b * (c * f)) ≡⟨ ≡.cong (λ x → e * x + e * (b * (c * f))) (*-comm (a * f) d) ⟩
+          e * (d * (a * f)) + e * (b * (c * f)) ≡⟨ ≡.cong₂ _+_ (*-assoc e d (a * f)) (*-assoc e b (c * f)) ⟨
+          (e * d) * (a * f) + (e * b) * (c * f) ≡⟨ ≡.cong₂ (λ x y → x * (a * f) + y * (c * f)) (*-comm e d) (*-comm e b) ⟩
+          (d * e) * (a * f) + (b * e) * (c * f) ≡⟨ ≡.cong (_+ (b * e) * (c * f)) (*-comm (d * e) (a * f)) ⟩
+          (a * f) * (d * e) + (b * e) * (c * f) ∎
+      ≡₂ : e * ((b * d) * e) ≡ (b * e) * (d * e)
+      ≡₂ = begin
+          e * ((b * d) * e) ≡⟨ ≡.cong (e *_) (*-assoc b d e) ⟩
+          e * (b * (d * e)) ≡⟨ *-assoc e b (d * e) ⟨
+          (e * b) * (d * e) ≡⟨ ≡.cong (_* (d * e)) (*-comm e b) ⟩
+          (b * e) * (d * e) ∎
+
+  -- Division distributives over subtraction from the right, when scaled by length
+  ÷-distribʳ-⊝ : ∀ p q r → scale-by (l r) ((p ⊝ q) ÷ r) ≡ (p ÷ r) ⊝ (q ÷ r)
+  ÷-distribʳ-⊝ (a , b) (c , d) (e , f) = mk-≡ ≡₁ ≡₂
+    where
+      ≡₁ : e * ((a * d - b * c) * f) ≡ a * f * (d * e) - b * e * (c * f)
+      ≡₁ = begin
+          e * ((a * d - b * c) * f)             ≡⟨ ≡.cong (e *_) (*-distribʳ-+ f (a * d) (- (b * c))) ⟩
+          e * ((a * d) * f + (- (b * c)) * f)   ≡⟨ ≡.cong (λ x → e * ((a * d) * f + x)) (neg-distribˡ-* (b * c) f) ⟨
+          e * ((a * d) * f - ((b * c) * f))     ≡⟨ *-distribˡ-+ e (a * d * f) (- (b * c * f)) ⟩
+          e * (a * d * f) + e * (- (b * c * f)) ≡⟨ ≡.cong (λ x → e * (a * d * f) + x) (neg-distribʳ-* e (b * c * f)) ⟨
+          e * (a * d * f) - e * (b * c * f)     ≡⟨ ≡.cong₂ (λ x y → e * x - e * y) (*-assoc a d f) (*-assoc b c f) ⟩
+          e * (a * (d * f)) - e * (b * (c * f)) ≡⟨ ≡.cong (λ x → e * (a * x) - e * (b * (c * f))) (*-comm f d) ⟨
+          e * (a * (f * d)) - e * (b * (c * f)) ≡⟨ ≡.cong (λ x → e * x - e * (b * (c * f))) (*-assoc a f d) ⟨
+          e * ((a * f) * d) - e * (b * (c * f)) ≡⟨ ≡.cong (λ x → e * x - e * (b * (c * f))) (*-comm (a * f) d) ⟩
+          e * (d * (a * f)) - e * (b * (c * f)) ≡⟨ ≡.cong₂ _-_ (*-assoc e d (a * f)) (*-assoc e b (c * f)) ⟨
+          (e * d) * (a * f) - (e * b) * (c * f) ≡⟨ ≡.cong₂ (λ x y → x * (a * f) - y * (c * f)) (*-comm e d) (*-comm e b) ⟩
+          (d * e) * (a * f) - (b * e) * (c * f) ≡⟨ ≡.cong (_- (b * e) * (c * f)) (*-comm (d * e) (a * f)) ⟩
+          (a * f) * (d * e) - (b * e) * (c * f) ∎
+      ≡₂ : e * ((b * d) * e) ≡ (b * e) * (d * e)
+      ≡₂ = begin
+          e * ((b * d) * e) ≡⟨ ≡.cong (e *_) (*-assoc b d e) ⟩
+          e * (b * (d * e)) ≡⟨ *-assoc e b (d * e) ⟨
+          (e * b) * (d * e) ≡⟨ ≡.cong (_* (d * e)) (*-comm e b) ⟩
+          (b * e) * (d * e) ∎
 
 -- Equivalence of (projective) duads is represented with a record type
 
