@@ -4,7 +4,7 @@ module Duad where
 
 -- Various imports from Agda's standard library
 
-open import Data.Integer using (ℤ; NonZero; _*_; +_; _+_; _-_; -_)
+open import Data.Integer using (ℤ; NonZero; _*_; +_; _+_; _-_; -_; 0ℤ; 1ℤ)
 open import Data.Integer.Properties
   using
     ( i*j≢0
@@ -14,7 +14,11 @@ open import Data.Integer.Properties
     ; neg-distribˡ-*; neg-distribʳ-*
     ; neg-distrib-+
     ; neg-involutive
+    ; *-identityˡ
+    ; *-zeroˡ ; *-zeroʳ
+    ; +-identityˡ ; +-identityʳ
     )
+open import Data.Nat using (ℕ)
 open import Data.Product using (proj₁; proj₂; _,_)
 open import Level using (0ℓ)
 open import Relation.Binary using (Rel; IsEquivalence; Setoid)
@@ -36,15 +40,22 @@ module Definition where
 
 open Definition
 
+-- Constructing duad literals
+[_,_] [-_,_] [_,-_] [-_,-_] : ℕ → ℕ → Duad
+[ a , b ]   = + a , + b
+[- a , b ]  = - + a , + b
+[ a ,- b ]  = + a , - + b
+[- a ,- b ] = - + a , - + b
+
 -- Example duads
 
 -- [3,5]
 _ : Duad
-_ = + 3 , + 5
+_ = [ 3 , 5 ]
 
 -- [7,-9]
 _ : Duad
-_ = + 7 , - + 9
+_ = [ 7 ,- 9 ]
 
 -- Basic operations on duads
 module Operations where
@@ -292,6 +303,93 @@ module BasicLaws where
           e * (b * (d * e)) ≡⟨ *-assoc e b (d * e) ⟨
           (e * b) * (d * e) ≡⟨ ≡.cong (_* (d * e)) (*-comm e b) ⟩
           (b * e) * (d * e) ∎
+
+module SpecialPoints where
+
+  -- Zero, One, Infinity, and Zoz
+  0d 1d ∞ ⋆ : Duad
+  0d = 0ℤ , 1ℤ
+  1d = 1ℤ , 1ℤ
+  ∞  = 1ℤ , 0ℤ
+  ⋆  = 0ℤ , 0ℤ
+
+  module Laws where
+
+    open Operations
+    open BasicLaws using (mk-≡)
+    open ≡-Reasoning
+
+    ⊕-identityˡ : ∀ p → 0d ⊕ p ≡ p
+    ⊕-identityˡ (a , b) = mk-≡ ≡₁ ≡₂
+      where
+        ≡₁ : 0ℤ * b + 1ℤ * a ≡ a
+        ≡₁ = begin
+            0ℤ * b + 1ℤ * a ≡⟨ ≡.cong₂ _+_ (*-zeroˡ b) (*-identityˡ a) ⟩
+            0ℤ + a          ≡⟨ +-identityˡ a ⟩
+            a ∎
+        ≡₂ : 1ℤ * b ≡ b
+        ≡₂ = *-identityˡ b
+
+    ×-identityˡ : ∀ p → 1d × p ≡ p
+    ×-identityˡ (a , b) = mk-≡ ≡₁ ≡₂
+      where
+        ≡₁ : 1ℤ * a ≡ a
+        ≡₁ = *-identityˡ a
+        ≡₂ : 1ℤ * b ≡ b
+        ≡₂ = *-identityˡ b
+
+    ⋆-⊕-absorbˡ : ∀ p → ⋆ ⊕ p ≡ ⋆
+    ⋆-⊕-absorbˡ (a , b) = mk-≡ ≡₁ ≡₂
+      where
+        ≡₁ : 0ℤ * a + 0ℤ * b ≡ 0ℤ
+        ≡₁ = begin
+            0ℤ * b + 0ℤ * a ≡⟨ ≡.cong₂ _+_ (*-zeroˡ b) (*-zeroˡ a) ⟩
+            0ℤ + 0ℤ         ≡⟨ +-identityˡ 0ℤ ⟩
+            0ℤ ∎
+        ≡₂ : 0ℤ * b ≡ 0ℤ
+        ≡₂ = *-zeroˡ b
+
+    ∞-⊕-absorbˡ : ∀ p → ∞ ⊕ p ≡ scale-by (h p) ∞
+    ∞-⊕-absorbˡ (a , b) = mk-≡ ≡₁ ≡₂
+      where
+        ≡₁ : 1ℤ * b + 0ℤ * a ≡ b * 1ℤ
+        ≡₁ = begin
+            1ℤ * b + 0ℤ * a ≡⟨ ≡.cong (λ x → 1ℤ * b + x) (*-zeroˡ a) ⟩
+            1ℤ * b + 0ℤ     ≡⟨ +-identityʳ (1ℤ * b) ⟩
+            1ℤ * b          ≡⟨ *-comm 1ℤ b ⟩
+            b * 1ℤ          ∎
+        ≡₂ : 0ℤ * b ≡ b * 0ℤ
+        ≡₂ = *-comm 0ℤ b
+
+    0-×-absorbˡ : ∀ p → 0d × p ≡ scale-by (h p) 0d
+    0-×-absorbˡ (a , b) = mk-≡ ≡₁ ≡₂
+      where
+        ≡₁ : 0ℤ * a ≡ b * 0ℤ
+        ≡₁ = begin
+            0ℤ * a ≡⟨ *-zeroˡ a ⟩
+            0ℤ     ≡⟨ *-zeroʳ b ⟨
+            b * 0ℤ ∎
+        ≡₂ : 1ℤ * b ≡ b * 1ℤ
+        ≡₂ = *-comm 1ℤ b
+
+    ⋆-×-absorbˡ : ∀ p → ⋆ × p ≡ ⋆
+    ⋆-×-absorbˡ (a , b) = mk-≡ ≡₁ ≡₂
+      where
+        ≡₁ : 0ℤ * a ≡ 0ℤ
+        ≡₁ = *-zeroˡ a
+        ≡₂ : 0ℤ * b ≡ 0ℤ
+        ≡₂ = *-zeroˡ b
+
+    ∞-×-absorbˡ : ∀ p → ∞ × p ≡ scale-by (l p) ∞
+    ∞-×-absorbˡ (a , b) = mk-≡ ≡₁ ≡₂
+      where
+        ≡₁ : 1ℤ * a ≡ a * 1ℤ
+        ≡₁ = *-comm 1ℤ a
+        ≡₂ : 0ℤ * b ≡ a * 0ℤ
+        ≡₂ = begin
+            0ℤ * b ≡⟨ *-zeroˡ b ⟩
+            0ℤ     ≡⟨ *-zeroʳ a ⟨
+            a * 0ℤ ∎
 
 -- Equivalence of (projective) duads is represented with a record type
 
