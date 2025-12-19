@@ -391,6 +391,51 @@ module SpecialPoints where
             0ℤ     ≡⟨ *-zeroʳ a ⟨
             a * 0ℤ ∎
 
+module HomogeneityLaws where
+
+  open Operations
+  open BasicLaws using (mk-≡)
+  open ≡-Reasoning
+
+  scale-by-distribˡ-⊕ : ∀ ƛ p q → scale-by ƛ (p ⊕ q) ≡ scale-by ƛ p ⊕ q
+  scale-by-distribˡ-⊕ ƛ (a , b) (c , d) = mk-≡ ≡₁ ≡₂
+    where
+      ≡₁ : ƛ * (a * d + b * c) ≡ ƛ * a * d + ƛ * b * c
+      ≡₁ = begin
+          ƛ * (a * d + b * c)       ≡⟨ *-distribˡ-+ ƛ (a * d) (b * c) ⟩
+          ƛ * (a * d) + ƛ * (b * c) ≡⟨ ≡.cong₂ _+_ (*-assoc ƛ a d) (*-assoc ƛ b c) ⟨
+          ƛ * a * d + ƛ * b * c     ∎
+      ≡₂ : ƛ * (b * d) ≡ (ƛ * b) * d
+      ≡₂ = ≡.sym (*-assoc ƛ b d)
+
+  scale-by-distribˡ-× : ∀ ƛ p q → scale-by ƛ (p × q) ≡ scale-by ƛ p × q
+  scale-by-distribˡ-× ƛ (a , b) (c , d) = mk-≡ ≡₁ ≡₂
+    where
+      ≡₁ : ƛ * (a * c) ≡ (ƛ * a) * c
+      ≡₁ = ≡.sym (*-assoc ƛ a c)
+      ≡₂ : ƛ * (b * d) ≡ (ƛ * b) * d
+      ≡₂ = ≡.sym (*-assoc ƛ b d)
+
+  scale-by-distribˡ-⊝ : ∀ ƛ p q → scale-by ƛ (p ⊝ q) ≡ scale-by ƛ p ⊝ q
+  scale-by-distribˡ-⊝ ƛ (a , b) (c , d) = mk-≡ ≡₁ ≡₂
+    where
+      ≡₁ : ƛ * (a * d - b * c) ≡ ƛ * a * d - ƛ * b * c
+      ≡₁ = begin
+          ƛ * (a * d - b * c)         ≡⟨ *-distribˡ-+ ƛ (a * d) (- (b * c)) ⟩
+          ƛ * (a * d) + ƛ * - (b * c) ≡⟨ ≡.cong (λ x → ƛ * (a * d) + x) (neg-distribʳ-* ƛ (b * c)) ⟨
+          ƛ * (a * d) - ƛ * (b * c)   ≡⟨ ≡.cong₂ _-_ (*-assoc ƛ a d) (*-assoc ƛ b c) ⟨
+          ƛ * a * d - ƛ * b * c       ∎
+      ≡₂ : ƛ * (b * d) ≡ (ƛ * b) * d
+      ≡₂ = ≡.sym (*-assoc ƛ b d)
+
+  scale-by-distribˡ-÷ : ∀ ƛ p q → scale-by ƛ (p ÷ q) ≡ scale-by ƛ p ÷ q
+  scale-by-distribˡ-÷ ƛ (a , b) (c , d) = mk-≡ ≡₁ ≡₂
+    where
+      ≡₁ : ƛ * (a * d) ≡ (ƛ * a) * d
+      ≡₁ = ≡.sym (*-assoc ƛ a d)
+      ≡₂ : ƛ * (b * c) ≡ (ƛ * b) * c
+      ≡₂ = ≡.sym (*-assoc ƛ b c)
+
 -- Equivalence of (projective) duads is represented with a record type
 
 record _~_ (p q : Duad) : Set where
